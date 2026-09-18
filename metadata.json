@@ -1,0 +1,6 @@
+{
+  "name": "Legal Document Assistant & Navigator",
+  "description": "GenAI-powered legal literacy assistant to simplify complex contracts, compare agreements side-by-side, highlight critical risks and obligations, answer grounded questions, and generate lawyer consultation packets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
