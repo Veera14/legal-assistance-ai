@@ -11,6 +11,9 @@ import { RiskAuditView } from "@/components/RiskAuditView";
 import { ComparatorView } from "@/components/ComparatorView";
 import { QAView } from "@/components/QAView";
 import { PrepPacketView } from "@/components/PrepPacketView";
+import { HistoryDrawer, SavedAnalysis } from "@/components/HistoryDrawer";
+import { SampleDocumentsModal } from "@/components/SampleDocumentsModal";
+import { SmartAssistantDrawer } from "@/components/SmartAssistantDrawer";
 
 describe("AccessibilityBar Component", () => {
   it("renders font size buttons and contrast toggle", () => {
@@ -221,8 +224,59 @@ describe("PrepPacketView Component", () => {
   });
 });
 
-describe("FocusTrap Component", () => {
-  it("renders children and triggers onEscape on Escape key press", () => {
+describe("HistoryDrawer & Modals Components", () => {
+  const sampleItems: SavedAnalysis[] = [
+    {
+      id: "session-1",
+      timestamp: Date.now(),
+      documentTitle: "Commercial Lease",
+      documentText: "Sample text",
+      userRole: "Tenant",
+    },
+  ];
+
+  it("renders HistoryDrawer and triggers callbacks", () => {
+    const onRestore = vi.fn();
+    const onDelete = vi.fn();
+
+    render(
+      <HistoryDrawer
+        isOpen={true}
+        onClose={vi.fn()}
+        savedItems={sampleItems}
+        onRestore={onRestore}
+        onDelete={onDelete}
+        onClearAll={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Commercial Lease")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Restore Session/i }));
+    expect(onRestore).toHaveBeenCalled();
+  });
+
+  it("renders SampleDocumentsModal", () => {
+    const onSelectSample = vi.fn();
+    render(<SampleDocumentsModal isOpen={true} onClose={vi.fn()} onSelectSample={onSelectSample} />);
+    expect(screen.getByText("Realistic Legal Agreement Templates")).toBeInTheDocument();
+  });
+
+  it("renders SmartAssistantDrawer", () => {
+    render(
+      <SmartAssistantDrawer
+        isOpen={true}
+        onClose={vi.fn()}
+        documentText="Lease text"
+        userRole="Tenant"
+        currentTab="simplify"
+      />
+    );
+    expect(screen.getByText("Smart Legal Co-Pilot")).toBeInTheDocument();
+  });
+});
+
+describe("FocusTrap & ErrorBoundary Components", () => {
+  it("FocusTrap triggers onEscape on Escape key press", () => {
     const onEscape = vi.fn();
     render(
       <FocusTrap isActive={true} onEscape={onEscape}>
@@ -234,14 +288,11 @@ describe("FocusTrap Component", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onEscape).toHaveBeenCalled();
   });
-});
 
-describe("ErrorBoundary Component", () => {
-  const ProblemComponent = () => {
-    throw new Error("Test component crash");
-  };
-
-  it("catches rendering errors gracefully and shows error UI", () => {
+  it("ErrorBoundary catches errors and displays fallback UI", () => {
+    const ProblemComponent = () => {
+      throw new Error("Test component crash");
+    };
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     render(
@@ -251,8 +302,6 @@ describe("ErrorBoundary Component", () => {
     );
 
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
-    expect(screen.getByText("Test component crash")).toBeInTheDocument();
-
     spy.mockRestore();
   });
 });

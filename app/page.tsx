@@ -1,22 +1,59 @@
 "use client";
 
-import React, { useState, useEffect, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import { Header, ActiveTab } from "@/components/Header";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { DocumentInput } from "@/components/DocumentInput";
-import { SimplifierView, SimplificationData } from "@/components/SimplifierView";
-import { ComparatorView, ComparisonData } from "@/components/ComparatorView";
-import { RiskAuditView, RiskAuditData } from "@/components/RiskAuditView";
-import { QAView, QAResult } from "@/components/QAView";
-import { PrepPacketView, PrepPacketData } from "@/components/PrepPacketView";
-import { SampleDocumentsModal } from "@/components/SampleDocumentsModal";
-import { HistoryDrawer, SavedAnalysis } from "@/components/HistoryDrawer";
+import { SimplificationData } from "@/components/SimplifierView";
+import { ComparisonData } from "@/components/ComparatorView";
+import { RiskAuditData } from "@/components/RiskAuditView";
+import { QAResult } from "@/components/QAView";
+import { PrepPacketData } from "@/components/PrepPacketView";
+import { SavedAnalysis } from "@/components/HistoryDrawer";
 import { AccessibilityBar } from "@/components/AccessibilityBar";
-import { SmartAssistantDrawer } from "@/components/SmartAssistantDrawer";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAnnounce } from "@/components/AriaLiveAnnouncer";
 import { SAMPLE_DOCUMENTS, SampleDocument } from "@/lib/sample-documents";
 import { AlertCircle, CheckCircle2, Shield, Sparkles } from "lucide-react";
+
+// Dynamic imports for code splitting & initial JS bundle size minimization
+const ViewSkeleton = ({ title }: { title: string }) => (
+  <div className="bg-white border border-slate-200 rounded-xl p-12 text-center space-y-3 animate-pulse">
+    <div className="w-10 h-10 border-3 border-slate-200 border-t-slate-900 rounded-full animate-spin mx-auto" />
+    <p className="text-xs font-semibold text-slate-700">{title}</p>
+  </div>
+);
+
+const SimplifierView = dynamic(
+  () => import("@/components/SimplifierView").then((mod) => mod.SimplifierView),
+  { loading: () => <ViewSkeleton title="Loading Simplifier Engine..." /> }
+);
+const ComparatorView = dynamic(
+  () => import("@/components/ComparatorView").then((mod) => mod.ComparatorView),
+  { loading: () => <ViewSkeleton title="Loading Comparator Engine..." /> }
+);
+const RiskAuditView = dynamic(
+  () => import("@/components/RiskAuditView").then((mod) => mod.RiskAuditView),
+  { loading: () => <ViewSkeleton title="Loading Risk Audit Engine..." /> }
+);
+const QAView = dynamic(
+  () => import("@/components/QAView").then((mod) => mod.QAView),
+  { loading: () => <ViewSkeleton title="Loading Grounded Q&A..." /> }
+);
+const PrepPacketView = dynamic(
+  () => import("@/components/PrepPacketView").then((mod) => mod.PrepPacketView),
+  { loading: () => <ViewSkeleton title="Loading Lawyer Prep Engine..." /> }
+);
+const SampleDocumentsModal = dynamic(
+  () => import("@/components/SampleDocumentsModal").then((mod) => mod.SampleDocumentsModal)
+);
+const HistoryDrawer = dynamic(
+  () => import("@/components/HistoryDrawer").then((mod) => mod.HistoryDrawer)
+);
+const SmartAssistantDrawer = dynamic(
+  () => import("@/components/SmartAssistantDrawer").then((mod) => mod.SmartAssistantDrawer)
+);
 
 const STORAGE_KEY = "lexi_legal_saved_sessions_v1";
 
@@ -109,13 +146,13 @@ export default function HomePage() {
   // Banner Notification
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const showNotification = (type: "success" | "error", message: string) => {
+  const showNotification = useCallback((type: "success" | "error", message: string) => {
     setNotification({ type, message });
     announce(message, type === "error" ? "assertive" : "polite");
     setTimeout(() => setNotification(null), 4500);
-  };
+  }, [announce]);
 
-  const persistCurrentSession = (
+  const persistCurrentSession = useCallback((
     updatedSimplification?: SimplificationData | null,
     updatedRisk?: RiskAuditData | null,
     updatedPrep?: PrepPacketData | null,
@@ -142,9 +179,9 @@ export default function HomePage() {
     } catch {
       // Ignore local storage write errors
     }
-  };
+  }, [documentTitle, documentText, userRole, simplificationData, riskAuditData, prepPacketData, qaHistory, savedSessions]);
 
-  const handleSimplifyDocument = async () => {
+  const handleSimplifyDocument = useCallback(async () => {
     if (!documentText.trim()) {
       showNotification("error", "Please enter or paste legal document text first.");
       return;
@@ -179,9 +216,9 @@ export default function HomePage() {
     } finally {
       setIsSimplifying(false);
     }
-  };
+  }, [documentText, readingLevel, userRole, announce, showNotification, persistCurrentSession]);
 
-  const handleAuditRisks = async () => {
+  const handleAuditRisks = useCallback(async () => {
     if (!documentText.trim()) {
       showNotification("error", "Please enter or paste legal document text first.");
       return;
@@ -215,9 +252,9 @@ export default function HomePage() {
     } finally {
       setIsAuditingRisks(false);
     }
-  };
+  }, [documentText, userRole, announce, showNotification, persistCurrentSession]);
 
-  const handleCompareDocuments = async (docA: string, docB: string, labelA: string, labelB: string, role?: string) => {
+  const handleCompareDocuments = useCallback(async (docA: string, docB: string, labelA: string, labelB: string, role?: string) => {
     if (!docA.trim() || !docB.trim()) {
       showNotification("error", "Please provide text for both agreements to run comparison.");
       return;
@@ -253,9 +290,9 @@ export default function HomePage() {
     } finally {
       setIsComparing(false);
     }
-  };
+  }, [userRole, announce, showNotification]);
 
-  const handleAskQuestion = async (question: string) => {
+  const handleAskQuestion = useCallback(async (question: string) => {
     if (!documentText.trim()) {
       showNotification("error", "Please enter or paste document text before asking questions.");
       return;
@@ -293,9 +330,11 @@ export default function HomePage() {
         recommendedQuestionsForAttorney: json.data.recommendedQuestionsForAttorney || [],
       };
 
-      const updatedHistory = [newQA, ...qaHistory];
-      setQaHistory(updatedHistory);
-      persistCurrentSession(undefined, undefined, undefined, updatedHistory);
+      setQaHistory((prev) => {
+        const updatedHistory = [newQA, ...prev];
+        persistCurrentSession(undefined, undefined, undefined, updatedHistory);
+        return updatedHistory;
+      });
       showNotification("success", "Answer generated with exact contract textual citations.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Q&A error occurred.";
@@ -303,9 +342,9 @@ export default function HomePage() {
     } finally {
       setIsAnsweringQA(false);
     }
-  };
+  }, [documentText, userRole, announce, showNotification, persistCurrentSession]);
 
-  const handleGeneratePrepPacket = async () => {
+  const handleGeneratePrepPacket = useCallback(async () => {
     if (!documentText.trim()) {
       showNotification("error", "Please enter or paste legal document text first.");
       return;
@@ -340,9 +379,9 @@ export default function HomePage() {
     } finally {
       setIsPreppingPacket(false);
     }
-  };
+  }, [documentText, userRole, userConcerns, announce, showNotification, persistCurrentSession]);
 
-  const handleSelectSample = (sample: SampleDocument) => {
+  const handleSelectSample = useCallback((sample: SampleDocument) => {
     setDocumentTitle(sample.title);
     setDocumentText(sample.text);
     setUserRole(sample.defaultRole);
@@ -351,9 +390,9 @@ export default function HomePage() {
     setPrepPacketData(null);
     setQaHistory([]);
     showNotification("success", `Loaded sample template: "${sample.title}"`);
-  };
+  }, [showNotification]);
 
-  const handleRestoreSession = (session: SavedAnalysis) => {
+  const handleRestoreSession = useCallback((session: SavedAnalysis) => {
     setDocumentTitle(session.documentTitle);
     setDocumentText(session.documentText);
     setUserRole(session.userRole);
@@ -362,26 +401,26 @@ export default function HomePage() {
     if (session.prepPacketData) setPrepPacketData(session.prepPacketData);
     if (session.qaHistory) setQaHistory(session.qaHistory);
     showNotification("success", `Restored session: "${session.documentTitle}"`);
-  };
+  }, [showNotification]);
 
-  const handleDeleteSession = (id: string) => {
+  const handleDeleteSession = useCallback((id: string) => {
     const updated = savedSessions.filter((s) => s.id !== id);
     cachedRaw = JSON.stringify(updated);
     cachedParsed = updated;
     localStorage.setItem(STORAGE_KEY, cachedRaw);
     window.dispatchEvent(new Event("lexi-storage-update"));
     showNotification("success", "Session deleted.");
-  };
+  }, [savedSessions, showNotification]);
 
-  const handleClearAllSessions = () => {
+  const handleClearAllSessions = useCallback(() => {
     cachedRaw = JSON.stringify([]);
     cachedParsed = emptySessions;
     localStorage.removeItem(STORAGE_KEY);
     window.dispatchEvent(new Event("lexi-storage-update"));
     showNotification("success", "All saved sessions cleared.");
-  };
+  }, [showNotification]);
 
-  const getActiveActionLabel = () => {
+  const getActiveActionLabel = useCallback(() => {
     switch (activeTab) {
       case "simplify":
         return "Translate to Plain English";
@@ -392,9 +431,9 @@ export default function HomePage() {
       default:
         return "Run Analysis";
     }
-  };
+  }, [activeTab]);
 
-  const handlePrimaryAnalyze = () => {
+  const handlePrimaryAnalyze = useCallback(() => {
     switch (activeTab) {
       case "simplify":
         handleSimplifyDocument();
@@ -410,7 +449,7 @@ export default function HomePage() {
       case "compare":
         break;
     }
-  };
+  }, [activeTab, handleSimplifyDocument, handleAuditRisks, handleGeneratePrepPacket]);
 
   return (
     <div

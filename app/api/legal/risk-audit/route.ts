@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateContentWithFallback } from "@/lib/gemini-resilience";
 import { checkRateLimit } from "@/lib/rate-limiter";
-import { validateDocumentText, formatUntrustedDocument } from "@/lib/sanitizer";
+import { validateDocumentText, formatUntrustedDocument, sanitizeUserInput } from "@/lib/sanitizer";
 import { computeCacheKey, getCachedResponse, setCachedResponse } from "@/lib/cache-utils";
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
 
 export async function POST(req: NextRequest) {
   const rateLimitError = checkRateLimit(req, { limit: 20, windowMs: 60 * 1000 });
@@ -20,9 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const sanitizedDocument = textValidation.value;
-    const userRole = typeof body.userRole === "string" && body.userRole.trim()
-      ? body.userRole.trim().slice(0, 100)
-      : "Signer / Consumer";
+    const userRole = sanitizeUserInput(body.userRole, 100, "Signer / Consumer");
 
     const cacheKey = computeCacheKey("risk-audit", { sanitizedDocument, userRole });
     const cached = getCachedResponse(cacheKey);

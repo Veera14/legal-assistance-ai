@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateContentWithFallback } from "@/lib/gemini-resilience";
 import { checkRateLimit } from "@/lib/rate-limiter";
-import { validateDocumentText, formatUntrustedDocument, validateEnum } from "@/lib/sanitizer";
+import { validateDocumentText, formatUntrustedDocument, validateEnum, sanitizeUserInput } from "@/lib/sanitizer";
 import { computeCacheKey, getCachedResponse, setCachedResponse } from "@/lib/cache-utils";
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
 
 export async function POST(req: NextRequest) {
   // 1. Security: Rate limiting check
@@ -28,9 +39,7 @@ export async function POST(req: NextRequest) {
       ["standard", "plain", "layperson"] as const,
       "plain"
     );
-    const partyPerspective = typeof body.partyPerspective === "string" && body.partyPerspective.trim()
-      ? body.partyPerspective.trim().slice(0, 100)
-      : "General / Layperson";
+    const partyPerspective = sanitizeUserInput(body.partyPerspective, 100, "General / Layperson");
 
     // 3. Efficiency: Check Cache
     const cacheKey = computeCacheKey("simplify", {

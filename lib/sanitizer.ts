@@ -116,6 +116,35 @@ export function escapeHTML(str: string): string {
 }
 
 /**
+ * Sanitizes arbitrary user string fields (roles, questions, concerns, labels)
+ * by stripping control characters, prompt injection tags, and applying PII redaction.
+ */
+export function sanitizeUserInput(
+  input: unknown,
+  maxLength = 500,
+  fallback = ""
+): string {
+  if (typeof input !== "string") return fallback;
+  const trimmed = input
+    .trim()
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .slice(0, maxLength);
+
+  if (!trimmed) return fallback;
+
+  // Redact PII in user questions or concerns
+  const piiCleaned = redactPII(trimmed).redactedText;
+
+  // Strip prompt injection tags
+  return piiCleaned
+    .replace(/<\/?[^>]+(>|$)/g, "")
+    .replace(/<system_instruction>/gi, "")
+    .replace(/<\/system_instruction>/gi, "")
+    .replace(/<untrusted_[a-z_]+>/gi, "")
+    .replace(/<\/untrusted_[a-z_]+>/gi, "");
+}
+
+/**
  * Validates role or reading level strings against allowed enums.
  */
 export function validateEnum<T extends string>(
@@ -128,3 +157,4 @@ export function validateEnum<T extends string>(
   }
   return defaultValue;
 }
+

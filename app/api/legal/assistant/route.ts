@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateContentWithFallback } from "@/lib/gemini-resilience";
 import { checkRateLimit } from "@/lib/rate-limiter";
-import { validateDocumentText, formatUntrustedDocument } from "@/lib/sanitizer";
+import { validateDocumentText, formatUntrustedDocument, sanitizeUserInput } from "@/lib/sanitizer";
 import { computeCacheKey, getCachedResponse, setCachedResponse } from "@/lib/cache-utils";
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
 
 export async function POST(req: NextRequest) {
   const rateLimitError = checkRateLimit(req, { limit: 25, windowMs: 60 * 1000 });
@@ -14,9 +25,9 @@ export async function POST(req: NextRequest) {
 
     const docValidation = validateDocumentText(body.documentText || "", 50000);
     const documentText = docValidation.value;
-    const userRole = typeof body.userRole === "string" && body.userRole.trim() ? body.userRole.trim().slice(0, 100) : "Individual / Consumer";
-    const userMessage = typeof body.userMessage === "string" && body.userMessage.trim() ? body.userMessage.trim().slice(0, 500) : "What are my best negotiation moves?";
-    const currentTab = typeof body.currentTab === "string" && body.currentTab.trim() ? body.currentTab.trim().slice(0, 50) : "general";
+    const userRole = sanitizeUserInput(body.userRole, 100, "Individual / Consumer");
+    const userMessage = sanitizeUserInput(body.userMessage, 500, "What are my best negotiation moves?");
+    const currentTab = sanitizeUserInput(body.currentTab, 50, "general");
 
     const cacheKey = computeCacheKey("assistant", { documentText, userRole, userMessage, currentTab });
     const cached = getCachedResponse(cacheKey);
@@ -81,7 +92,7 @@ Return strictly valid JSON matching this schema:
 
     const result = await generateContentWithFallback({
       systemInstruction: systemPrompt,
-      contents: `${contents}\n\nUser Question: ${userMessage.replace(/<\/untrusted_question>/gi, "")}`,
+      contents: `${contents}\n\nUser Question: ${userMessage}`,
       temperature: 0.2,
       responseMimeType: "application/json",
     });

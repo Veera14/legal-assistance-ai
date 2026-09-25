@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateContentWithFallback } from "@/lib/gemini-resilience";
 import { checkRateLimit } from "@/lib/rate-limiter";
-import { validateDocumentText, formatUntrustedDocument } from "@/lib/sanitizer";
+import { validateDocumentText, formatUntrustedDocument, sanitizeUserInput } from "@/lib/sanitizer";
 import { computeCacheKey, getCachedResponse, setCachedResponse } from "@/lib/cache-utils";
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
 
 export async function POST(req: NextRequest) {
   const rateLimitError = checkRateLimit(req, { limit: 15, windowMs: 60 * 1000 });
@@ -24,9 +35,9 @@ export async function POST(req: NextRequest) {
 
     const docAText = docAValidation.value;
     const docBText = docBValidation.value;
-    const docALabel = typeof body.docALabel === "string" && body.docALabel.trim() ? body.docALabel.trim().slice(0, 50) : "Document A";
-    const docBLabel = typeof body.docBLabel === "string" && body.docBLabel.trim() ? body.docBLabel.trim().slice(0, 50) : "Document B";
-    const userRole = typeof body.userRole === "string" && body.userRole.trim() ? body.userRole.trim().slice(0, 100) : "General User / Consumer";
+    const docALabel = sanitizeUserInput(body.docALabel, 50, "Document A");
+    const docBLabel = sanitizeUserInput(body.docBLabel, 50, "Document B");
+    const userRole = sanitizeUserInput(body.userRole, 100, "General User / Consumer");
 
     const cacheKey = computeCacheKey("compare", { docAText, docBText, docALabel, docBLabel, userRole });
     const cached = getCachedResponse(cacheKey);
