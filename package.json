@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "vitest run --pool=threads",
-    "test:watch": "vitest --pool=threads",
+    "test": "vitest run --pool=forks",
+    "test:watch": "vitest --pool=forks",
     "clean": "next clean"
   },
   "dependencies": {

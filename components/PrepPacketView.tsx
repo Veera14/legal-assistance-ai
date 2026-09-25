@@ -66,7 +66,7 @@ interface PrepPacketViewProps {
   onUserConcernsChange: (val: string) => void;
 }
 
-export const PrepPacketView: React.FC<PrepPacketViewProps> = ({
+export const PrepPacketView: React.FC<PrepPacketViewProps> = React.memo(({
   data,
   isLoading,
   onGenerate,
@@ -498,4 +498,7 @@ ${data.criticalDeadlinesAndWindows?.map((d) => `• ${d.trigger} | Window: ${d.t
       )}
     </div>
   );
-};
+});
+
+PrepPacketView.displayName = "PrepPacketView";
+

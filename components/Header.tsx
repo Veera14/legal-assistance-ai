@@ -129,6 +129,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Tab Navigation */}
         <nav
           id="tab-navigation"
+          role="tablist"
           aria-label="Workflow Navigation"
           className="flex space-x-1 sm:space-x-2 overflow-x-auto py-2 border-t border-slate-100 no-scrollbar"
         >
@@ -139,10 +140,13 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 key={tab.id}
                 id={`nav-tab-${tab.id}`}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`tabpanel-${tab.id}`}
                 onClick={() => onTabChange(tab.id)}
                 type="button"
                 title={tab.tooltip}
-                className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all duration-150 ${
+                className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all duration-150 cursor-pointer focus:ring-2 focus:ring-amber-500 outline-hidden ${
                   isActive
                     ? "bg-slate-900 text-white shadow-xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"

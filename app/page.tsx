@@ -420,6 +420,14 @@ export default function HomePage() {
         fontSizeLevel === "large" ? "text-[15px]" : fontSizeLevel === "xlarge" ? "text-base" : "text-sm"
       } flex flex-col font-sans selection:bg-amber-100 selection:text-amber-900 transition-colors duration-150`}
     >
+      {/* Skip to main content link for screen readers */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-slate-900 focus:text-amber-300 focus:rounded-lg focus:font-bold focus:shadow-xl focus:outline-hidden"
+      >
+        Skip to main content
+      </a>
+
       {/* Header */}
       <Header
         activeTab={activeTab}
@@ -480,48 +488,58 @@ export default function HomePage() {
           )}
 
           {activeTab === "simplify" && (
-            <SimplifierView
-              data={simplificationData}
-              isLoading={isSimplifying}
-              onReSimplify={handleSimplifyDocument}
-              readingLevel={readingLevel}
-              onReadingLevelChange={setReadingLevel}
-            />
+            <div id="tabpanel-simplify" role="tabpanel" aria-labelledby="nav-tab-simplify">
+              <SimplifierView
+                data={simplificationData}
+                isLoading={isSimplifying}
+                onReSimplify={handleSimplifyDocument}
+                readingLevel={readingLevel}
+                onReadingLevelChange={setReadingLevel}
+              />
+            </div>
           )}
 
           {activeTab === "risks" && (
-            <RiskAuditView
-              data={riskAuditData}
-              isLoading={isAuditingRisks}
-            />
+            <div id="tabpanel-risks" role="tabpanel" aria-labelledby="nav-tab-risks">
+              <RiskAuditView
+                data={riskAuditData}
+                isLoading={isAuditingRisks}
+              />
+            </div>
           )}
 
           {activeTab === "compare" && (
-            <ComparatorView
-              onRunCompare={handleCompareDocuments}
-              isComparing={isComparing}
-              comparisonResult={comparisonResult}
-            />
+            <div id="tabpanel-compare" role="tabpanel" aria-labelledby="nav-tab-compare">
+              <ComparatorView
+                onRunCompare={handleCompareDocuments}
+                isComparing={isComparing}
+                comparisonResult={comparisonResult}
+              />
+            </div>
           )}
 
           {activeTab === "qa" && (
-            <QAView
-              onAskQuestion={handleAskQuestion}
-              isAnswering={isAnsweringQA}
-              history={qaHistory}
-              hasDocument={!!documentText.trim()}
-            />
+            <div id="tabpanel-qa" role="tabpanel" aria-labelledby="nav-tab-qa">
+              <QAView
+                onAskQuestion={handleAskQuestion}
+                isAnswering={isAnsweringQA}
+                history={qaHistory}
+                hasDocument={!!documentText.trim()}
+              />
+            </div>
           )}
 
           {activeTab === "preppacket" && (
-            <PrepPacketView
-              data={prepPacketData}
-              isLoading={isPreppingPacket}
-              onGenerate={handleGeneratePrepPacket}
-              hasDocument={!!documentText.trim()}
-              userConcerns={userConcerns}
-              onUserConcernsChange={setUserConcerns}
-            />
+            <div id="tabpanel-preppacket" role="tabpanel" aria-labelledby="nav-tab-preppacket">
+              <PrepPacketView
+                data={prepPacketData}
+                isLoading={isPreppingPacket}
+                onGenerate={handleGeneratePrepPacket}
+                hasDocument={!!documentText.trim()}
+                userConcerns={userConcerns}
+                onUserConcernsChange={setUserConcerns}
+              />
+            </div>
           )}
         </ErrorBoundary>
       </main>

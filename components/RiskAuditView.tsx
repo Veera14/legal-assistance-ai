@@ -55,7 +55,7 @@ interface RiskAuditViewProps {
   isLoading: boolean;
 }
 
-export const RiskAuditView: React.FC<RiskAuditViewProps> = ({ data, isLoading }) => {
+export const RiskAuditView: React.FC<RiskAuditViewProps> = React.memo(({ data, isLoading }) => {
   const [copied, setCopied] = useState(false);
   const [expandedRisks, setExpandedRisks] = useState<Record<string, boolean>>({});
 
@@ -412,4 +412,7 @@ ${data.criticalRisks
       )}
     </div>
   );
-};
+});
+
+RiskAuditView.displayName = "RiskAuditView";
+

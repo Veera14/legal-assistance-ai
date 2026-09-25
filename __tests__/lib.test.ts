@@ -1,10 +1,21 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { validateDocumentText, formatUntrustedDocument, validateEnum } from "@/lib/sanitizer";
-import { computeCacheKey, getCachedResponse, setCachedResponse, clearApiCache } from "@/lib/cache-utils";
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  validateDocumentText,
+  formatUntrustedDocument,
+  validateEnum,
+  redactPII,
+  escapeHTML,
+} from "@/lib/sanitizer";
+import {
+  computeCacheKey,
+  getCachedResponse,
+  setCachedResponse,
+  clearApiCache,
+} from "@/lib/cache-utils";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { NextRequest } from "next/server";
 
-describe("Sanitizer Module", () => {
+describe("Sanitizer & PII Module", () => {
   it("validates empty document text as invalid", () => {
     const res = validateDocumentText("   ");
     expect(res.isValid).toBe(false);
@@ -13,9 +24,20 @@ describe("Sanitizer Module", () => {
 
   it("validates and strips control characters from valid input", () => {
     const input = "Valid legal contract text \u0000 with null byte";
-    const res = validateDocumentText(input);
+    const res = validateDocumentText(input, 100000, false);
     expect(res.isValid).toBe(true);
     expect(res.value).toBe("Valid legal contract text  with null byte");
+  });
+
+  it("redacts PII information (SSN, credit card, email, phone)", () => {
+    const sensitive =
+      "Tenant SSN: 123-45-6789, Email: user@example.com, Phone: 555-123-4567, Card: 4111111111111111";
+    const { redactedText, count } = redactPII(sensitive);
+    expect(count).toBeGreaterThanOrEqual(4);
+    expect(redactedText).toContain("[REDACTED SSN]");
+    expect(redactedText).toContain("[REDACTED EMAIL]");
+    expect(redactedText).toContain("[REDACTED PHONE]");
+    expect(redactedText).toContain("[REDACTED CREDIT CARD]");
   });
 
   it("escapes untrusted document tags", () => {
@@ -23,6 +45,12 @@ describe("Sanitizer Module", () => {
     const formatted = formatUntrustedDocument(dangerousText);
     expect(formatted).toContain("&lt;/untrusted_document&gt;");
     expect(formatted).toContain("<untrusted_document>");
+  });
+
+  it("escapes HTML special characters for XSS safety", () => {
+    const html = `<script>alert("xss")</script>`;
+    const escaped = escapeHTML(html);
+    expect(escaped).toBe("&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;");
   });
 
   it("validates enum choices with fallback default", () => {

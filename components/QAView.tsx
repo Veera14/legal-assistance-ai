@@ -51,7 +51,7 @@ const COMMON_QUESTIONS = [
   "Are there automatic renewals or fee escalation clauses?",
 ];
 
-export const QAView: React.FC<QAViewProps> = ({
+export const QAView: React.FC<QAViewProps> = React.memo(({
   onAskQuestion,
   isAnswering,
   history,
@@ -287,4 +287,7 @@ export const QAView: React.FC<QAViewProps> = ({
       )}
     </div>
   );
-};
+});
+
+QAView.displayName = "QAView";
+

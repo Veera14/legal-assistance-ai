@@ -48,7 +48,7 @@ interface ComparatorViewProps {
   comparisonResult: ComparisonData | null;
 }
 
-export const ComparatorView: React.FC<ComparatorViewProps> = ({
+export const ComparatorView: React.FC<ComparatorViewProps> = React.memo(({
   onRunCompare,
   isComparing,
   comparisonResult,
@@ -360,4 +360,7 @@ export const ComparatorView: React.FC<ComparatorViewProps> = ({
       )}
     </div>
   );
-};
+});
+
+ComparatorView.displayName = "ComparatorView";
+

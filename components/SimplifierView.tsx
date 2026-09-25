@@ -53,7 +53,7 @@ interface SimplifierViewProps {
   onReSimplify: () => void;
 }
 
-export const SimplifierView: React.FC<SimplifierViewProps> = ({
+export const SimplifierView: React.FC<SimplifierViewProps> = React.memo(({
   data,
   readingLevel,
   onReadingLevelChange,
@@ -391,4 +391,8 @@ ${data.immediateActionItems?.map((a, i) => `${i + 1}. ${a}`).join("\n")}`;
       )}
     </div>
   );
-};
+});
+
+SimplifierView.displayName = "SimplifierView";
+
+
